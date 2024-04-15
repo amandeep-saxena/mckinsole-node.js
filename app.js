@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(bodyParser.json());
 
 //database  ///
-mongoose
+mongoose    
   .connect("mongodb://127.0.0.1:27017/curd", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -35,26 +35,34 @@ function generateCaptcha() {
 
 app.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
-
-  // if (!name || !email || !password) {
-  //   return res.status(400).send({ message: "Invalid request body" });
-  // }
-
-  if (!name) {
+  if (!name ) {
     return res.status(400).json({ message: "Nman Filed req.." });
   }
-
   if (!email) {
     return res.status(400).json({ message: "email Filed req.." });
   }
-
   if (!password) {
     return res.status(400).json({ message: "password Filed req.." });
   }
+  // const existingUser = await Login.findOne({ email });
+  // if (existingUser) {
+  //   return res.status(400).send({ message: "User already exists" });
+  // }
 
+  // if (!name || !email || !password) {
+  //   return res.status(400).json({ message: "All fields are required" });
+  // }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: "Invalid email format" });
+  }
+
+  // Check if user already exists
   const existingUser = await Login.findOne({ email });
   if (existingUser) {
-    return res.status(400).send({ message: "User already exists" });
+    return res.status(400).json({ message: "User already exists" });
   }
 
   const user = new Login({
@@ -115,12 +123,12 @@ app.get("/token1", verifyToken, async (req, res) => {
   }
 });
 
-// app.get("/token", verifyToken, (req, res) => {
-//   res.json({
-//     message: "You have accessed the protected route!",
-//     userId: req.userId,
-//   });
-// });
+app.get("/token", verifyToken, (req, res) => {
+  res.json({
+    message: "You have accessed the protected route!",
+    userId: req.userId,
+  });
+});
 
 app.post("/FindData", async (req, res) => {
   const email = req.query.email;

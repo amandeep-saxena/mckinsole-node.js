@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    require: true,
+    required: true,
   },
   email: {
     type: String,
@@ -14,9 +14,9 @@ const userSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator: function (v) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+        return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);
       },
-      message: "{VALUE} is not a valid email!",
+      message: (props) => `${props.value} is not a valid email!`, // Use template string
     },
   },
   password: {
