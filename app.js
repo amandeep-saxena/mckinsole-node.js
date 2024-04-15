@@ -101,11 +101,10 @@ app.post("/login", async (req, res) => {
 
 app.get("/token1", verifyToken, async (req, res) => {
   try {
-    const user = await Login.findById(req.userId).select('-password'); // Exclude password field
+    const user = await Login.findById(req.userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-
     res.json({
       message: "You have accessed the protected route!",
       user,
@@ -116,12 +115,12 @@ app.get("/token1", verifyToken, async (req, res) => {
   }
 });
 
-app.get("/token", verifyToken, (req, res) => {
-  res.json({
-    message: "You have accessed the protected route!",
-    userId: req.userId,
-  });
-});
+// app.get("/token", verifyToken, (req, res) => {
+//   res.json({
+//     message: "You have accessed the protected route!",
+//     userId: req.userId,
+//   });
+// });
 
 app.post("/FindData", async (req, res) => {
   const email = req.query.email;
