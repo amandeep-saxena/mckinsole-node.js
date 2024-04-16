@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 // mongoose.set("strictQuery", true);
 
-
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -9,22 +8,26 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    unique: true,
-    lowercase: true,
-    trim: true,
-    required: true,
-    validate: {
-      validator: function (v) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-        // return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);
-      },
-      message: (props) => `${props.value} is not a valid email!`, 
-    },
+    // unique: true,
+    // lowercase: true,
+    // trim: true,
+    // required: true,
+    // validate: {
+    //   validator: function (v) {
+    //     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    //     // return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);
+    //   },
+    //   message: (props) => `${props.value} is not a valid email!`,
+    // },
   },
   password: {
     type: String,
     required: true,
   },
+  newPassword: {
+    type: String,
+  },
+  token: { type: String },
 });
 
 module.exports = new mongoose.model("Login", userSchema);

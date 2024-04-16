@@ -8,8 +8,8 @@ const bodyParser = require("body-parser");
 const verifyToken = require("./middleware/authMiddleware");
 const jwt = require("jsonwebtoken");
 var morgan = require("morgan");
+const Admin = require("./model/Admin");
 // const Admin = require("./model/Admin");
-
 
 app.use(morgan("dev"));
 app.use(express.json());
@@ -42,10 +42,10 @@ function generateCaptcha() {
 app.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
   if (!name) {
-    return res.status(400).json({ message: "Nman Filed req.." });
+    return res.status(400).json({ message: "Nman Filed insert data" });
   }
   if (!password) {
-    return res.status(400).json({ message: "password Filed req.." });
+    return res.status(400).json({ message: "password Filed  insert data" });
   }
   // const existingUser = await Login.findOne({ email });
   // if (existingUser) {
@@ -76,6 +76,15 @@ app.post("/register", async (req, res) => {
 
   res.status(201).send(user);
 
+  // const token = jwt.sign(
+  //   { user_id: user._id, email },
+  //   "aman@123",
+  //   {
+  //     expiresIn: "1m",
+  //   }
+  // );
+  // user.token = token;
+
   //   Generate JWT token
   //   const token = jwt.sign({ userId: user._id, email: user.email }, 'aman@12', { expiresIn: '1h' });
 
@@ -98,10 +107,10 @@ app.post("/login", async (req, res) => {
   }
 
   const token = jwt.sign(
-    { userId: data._id, email: data.email, name: data.name },
-    "aman@112",
+    { userId: data._id, email: data.email, name: data.name , password : data.password},
+    "aman@123",
     {
-      expiresIn: "1m",
+      expiresIn: "1h",
     }
   );
 
@@ -111,7 +120,7 @@ app.post("/login", async (req, res) => {
 app.get("/token1", verifyToken, async (req, res) => {
   try {
     const user = await Login.findById(req.userId);
-    console.log(user)
+    console.log(user);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -125,20 +134,14 @@ app.get("/token1", verifyToken, async (req, res) => {
   }
 });
 
-app.get("/token",verifyToken,  async(req, res) => {
+app.get("/token", verifyToken, async (req, res) => {
   const user = await Login.findById(req.userId);
-  console.log(user)
+  console.log(user);
   res.json({
     message: "You have accessed the protected route!",
-    user
+    user,
   });
 });
-
-
-
-
-
-
 
 app.post("/FindData", async (req, res) => {
   const email = req.query.email;
@@ -194,6 +197,40 @@ app.post("/verify", (req, res) => {
     res
       .status(400)
       .json({ success: false, error: "CAPTCHA verification failed" });
+  }
+});
+
+
+
+app.post('/reset-password', async (req, res) => {
+  const { email, newPassword, token } = req.body;
+
+  if (!email || !newPassword) {
+    return res.status(400).json({ message: 'Email and new password are required' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, "aman@123");
+    // console.log(decoded)
+    const users = await Login.find({ email: email });
+
+    if (users.length > 0) {
+      const hashedPassword = bcrypt.hashSync(newPassword, 10);
+      // console.log(hashedPassword)
+      
+      users[0].password = hashedPassword;
+      await users[0].save();
+
+      return res.status(200).json({ message: 'Password reset successfully' });
+    } else {
+      return res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+    console.error(error);
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
