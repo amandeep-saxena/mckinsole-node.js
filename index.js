@@ -3,22 +3,28 @@ const app = express();
 const port = 7000;
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
-const Login = require("../project/model/User");
+const Login = require("./model/User");
 const bodyParser = require("body-parser");
 const verifyToken = require("./middleware/authMiddleware");
 const jwt = require("jsonwebtoken");
-
+var morgan = require("morgan");
 // const Admin = require("./model/Admin");
 
+
+app.use(morgan("dev"));
 app.use(express.json());
 app.use(bodyParser.json());
 
 //database  ///
-mongoose    
-  .connect("mongodb://127.0.0.1:27017/curd", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+
+mongoose
+  .connect(
+    "mongodb+srv://saxenaman903:7iBj7Pkhtfj2bMGl@cluster0.j2jkj8p.mongodb.net/",
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    }
+  )
   .then(() => console.log("Connected! successfull-------- "));
 
 function generateCaptcha() {
@@ -35,11 +41,8 @@ function generateCaptcha() {
 
 app.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
-  if (!name ) {
+  if (!name) {
     return res.status(400).json({ message: "Nman Filed req.." });
-  }
-  if (!email) {
-    return res.status(400).json({ message: "email Filed req.." });
   }
   if (!password) {
     return res.status(400).json({ message: "password Filed req.." });
@@ -53,7 +56,6 @@ app.post("/register", async (req, res) => {
   //   return res.status(400).json({ message: "All fields are required" });
   // }
 
-  // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.status(400).json({ message: "Invalid email format" });
@@ -99,36 +101,44 @@ app.post("/login", async (req, res) => {
     { userId: data._id, email: data.email, name: data.name },
     "aman@112",
     {
-      expiresIn: "1h",
+      expiresIn: "1m",
     }
   );
+
   res.status(200).json({ token });
-
 });
-
 
 app.get("/token1", verifyToken, async (req, res) => {
   try {
     const user = await Login.findById(req.userId);
+    console.log(user)
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
     res.json({
       message: "You have accessed the protected route!",
       user,
     });
   } catch (error) {
-    console.error('Error fetching user:', error.message);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error fetching user:", error.message);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-app.get("/token", verifyToken, (req, res) => {
+app.get("/token",verifyToken,  async(req, res) => {
+  const user = await Login.findById(req.userId);
+  console.log(user)
   res.json({
     message: "You have accessed the protected route!",
-    userId: req.userId,
+    user
   });
 });
+
+
+
+
+
+
 
 app.post("/FindData", async (req, res) => {
   const email = req.query.email;
