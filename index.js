@@ -41,37 +41,93 @@ function generateCaptcha() {
 }
 
 const checkPasswordValidity = (value) => {
-  const isNonWhiteSpace = /^\S*$/;
-  if (!isNonWhiteSpace.test(value)) {
+  if (value.includes(' ')) {
     return "Password must not contain Whitespaces.";
   }
 
-  const isContainsUppercase = /^(?=.*[A-Z]).*$/;
-  if (!isContainsUppercase.test(value)) {
+  let hasUppercase = false;
+  let hasLowercase = false;
+  let hasNumber = false;
+  let hasSymbol = false;
+
+  // Iterate through each character of the password
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i];
+    
+    // Check for uppercase letters
+    if (char >= 'A' && char <= 'Z') {
+      hasUppercase = true;
+    }
+    
+    // Check for lowercase letters
+    if (char >= 'a' && char <= 'z') {
+      hasLowercase = true;
+    }
+    
+    // Check for numbers
+    if (char >= '0' && char <= '9') {
+      hasNumber = true;
+    }
+    
+    // Check for special symbols
+    const symbols = '~`!@#$%^&*()--+={}[\\]|:;"\'<>,.?/_₹';
+    if (symbols.includes(char)) {
+      hasSymbol = true;
+    }
+  }
+
+  if (!hasUppercase) {
     return "Password must have at least one Uppercase Character.";
   }
 
-  const isContainsLowercase = /^(?=.*[a-z]).*$/;
-  if (!isContainsLowercase.test(value)) {
+  if (!hasLowercase) {
     return "Password must have at least one Lowercase Character.";
   }
 
-  const isContainsNumber = /^(?=.*[0-9]).*$/;
-  if (!isContainsNumber.test(value)) {
+  if (!hasNumber) {
     return "Password must contain at least one Digit.";
   }
 
-  const isContainsSymbol = /^(?=.*[~`!@#$%^&*()--+={}\[\]|\\:;"'<>,.?/_₹]).*$/;
-  if (!isContainsSymbol.test(value)) {
+  if (!hasSymbol) {
     return "Password must contain at least one Special Symbol.";
   }
 
-  const isValidLength = /^.{10,16}$/;
-  if (!isValidLength.test(value)) {
+  if (value.length < 10 || value.length > 16) {
     return "Password must be 10-16 Characters Long.";
   }
 
   return null;
+  // const isNonWhiteSpace = /^\S*$/;
+  // if (!isNonWhiteSpace.test(value)) {
+  //   return "Password must not contain Whitespaces.";
+  // }
+
+  // const isContainsUppercase = /^(?=.*[A-Z]).*$/;
+  // if (!isContainsUppercase.test(value)) {
+  //   return "Password must have at least one Uppercase Character.";
+  // }
+
+  // const isContainsLowercase = /^(?=.*[a-z]).*$/;
+  // if (!isContainsLowercase.test(value)) {
+  //   return "Password must have at least one Lowercase Character.";
+  // }
+
+  // const isContainsNumber = /^(?=.*[0-9]).*$/;
+  // if (!isContainsNumber.test(value)) {
+  //   return "Password must contain at least one Digit.";
+  // }
+
+  // const isContainsSymbol = /^(?=.*[~`!@#$%^&*()--+={}\[\]|\\:;"'<>,.?/_₹]).*$/;
+  // if (!isContainsSymbol.test(value)) {
+  //   return "Password must contain at least one Special Symbol.";
+  // }
+
+  // const isValidLength = /^.{10,16}$/;
+  // if (!isValidLength.test(value)) {
+  //   return "Password must be 10-16 Characters Long.";
+  // }
+
+  // return null;
 };
 
 app.post("/register", async (req, res) => {
@@ -93,16 +149,9 @@ app.post("/register", async (req, res) => {
   if (!emailRegex.test(email)) {
     return res.status(400).json({ message: "Invalid email format" });
   }
-
-  // const existingUser = await Login.findOne({ email });
-  // if (existingUser) {
-  //   return res.status(400).send({ message: "User already exists" });
-  // }
-
   // if (!name || !email || !password) {
   //   return res.status(400).json({ message: "All fields are required" });
   // }
-
   // Check if user already exists
   const existingUser = await Login.findOne({ email });
   if (existingUser) {
@@ -198,7 +247,7 @@ app.post("/reset-password", async (req, res) => {
     return res.status(400).json({ message: passwordValidationMessage });
   }
 
-  if (!email || !passwordValidationMessage) {
+  if (!email || !newPassword) {
     return res
       .status(400)
       .json({ message: "Email and new password are required" });

@@ -14,3 +14,14 @@ PM2 server :
 11. pm2 restart app.js
 
 12. pm2 link ixv2bur0xkh1117 genlr4uz9eyu2xo
+
+
+
+
+<!-- code push on github command -->
+
+git init.
+git add -A.
+git commit -m 'Added my project'
+git remote add origin git@github.com: sammy/my-new-project.git.
+git push -u -f origin main.
