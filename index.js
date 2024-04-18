@@ -10,6 +10,7 @@ const jwt = require("jsonwebtoken");
 var morgan = require("morgan");
 const Admin = require("./model/Admin");
 // const Admin = require("./model/Admin");
+var crypto = require("crypto");
 
 app.use(morgan("dev"));
 app.use(express.json());
@@ -39,14 +40,60 @@ function generateCaptcha() {
   return captcha;
 }
 
+const checkPasswordValidity = (value) => {
+  const isNonWhiteSpace = /^\S*$/;
+  if (!isNonWhiteSpace.test(value)) {
+    return "Password must not contain Whitespaces.";
+  }
+
+  const isContainsUppercase = /^(?=.*[A-Z]).*$/;
+  if (!isContainsUppercase.test(value)) {
+    return "Password must have at least one Uppercase Character.";
+  }
+
+  const isContainsLowercase = /^(?=.*[a-z]).*$/;
+  if (!isContainsLowercase.test(value)) {
+    return "Password must have at least one Lowercase Character.";
+  }
+
+  const isContainsNumber = /^(?=.*[0-9]).*$/;
+  if (!isContainsNumber.test(value)) {
+    return "Password must contain at least one Digit.";
+  }
+
+  const isContainsSymbol = /^(?=.*[~`!@#$%^&*()--+={}\[\]|\\:;"'<>,.?/_₹]).*$/;
+  if (!isContainsSymbol.test(value)) {
+    return "Password must contain at least one Special Symbol.";
+  }
+
+  const isValidLength = /^.{10,16}$/;
+  if (!isValidLength.test(value)) {
+    return "Password must be 10-16 Characters Long.";
+  }
+
+  return null;
+};
+
 app.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
+
   if (!name) {
     return res.status(400).json({ message: "Nman Filed insert data" });
   }
   if (!password) {
     return res.status(400).json({ message: "password Filed  insert data" });
   }
+
+  const passwordValidationMessage = checkPasswordValidity(password);
+  if (passwordValidationMessage) {
+    return res.status(400).json({ message: passwordValidationMessage });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: "Invalid email format" });
+  }
+
   // const existingUser = await Login.findOne({ email });
   // if (existingUser) {
   //   return res.status(400).send({ message: "User already exists" });
@@ -55,11 +102,6 @@ app.post("/register", async (req, res) => {
   // if (!name || !email || !password) {
   //   return res.status(400).json({ message: "All fields are required" });
   // }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return res.status(400).json({ message: "Invalid email format" });
-  }
 
   // Check if user already exists
   const existingUser = await Login.findOne({ email });
@@ -107,7 +149,12 @@ app.post("/login", async (req, res) => {
   }
 
   const token = jwt.sign(
-    { userId: data._id, email: data.email, name: data.name , password : data.password},
+    {
+      userId: data._id,
+      email: data.email,
+      name: data.name,
+      password: data.password,
+    },
     "aman@123",
     {
       expiresIn: "1h",
@@ -141,6 +188,44 @@ app.get("/token", verifyToken, async (req, res) => {
     message: "You have accessed the protected route!",
     user,
   });
+});
+
+app.post("/reset-password", async (req, res) => {
+  const { email, newPassword, token } = req.body;
+
+  const passwordValidationMessage = checkPasswordValidity(newPassword);
+  if (passwordValidationMessage) {
+    return res.status(400).json({ message: passwordValidationMessage });
+  }
+
+  if (!email || !passwordValidationMessage) {
+    return res
+      .status(400)
+      .json({ message: "Email and new password are required" });
+  }
+  try {
+    const decoded = jwt.verify(token, "aman@123");
+    console.log(decoded);
+    const users = await Login.find({ email: email });
+
+    if (users.length > 0) {
+      const hashedPassword = bcrypt.hashSync(newPassword, 10);
+      // console.log(hashedPassword)
+
+      users[0].password = hashedPassword;
+      await users[0].save();
+
+      return res.status(200).json({ message: "Password reset successfully" });
+    } else {
+      return res.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
 });
 
 app.post("/FindData", async (req, res) => {
@@ -197,40 +282,6 @@ app.post("/verify", (req, res) => {
     res
       .status(400)
       .json({ success: false, error: "CAPTCHA verification failed" });
-  }
-});
-
-
-
-app.post('/reset-password', async (req, res) => {
-  const { email, newPassword, token } = req.body;
-
-  if (!email || !newPassword) {
-    return res.status(400).json({ message: 'Email and new password are required' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, "aman@123");
-    // console.log(decoded)
-    const users = await Login.find({ email: email });
-
-    if (users.length > 0) {
-      const hashedPassword = bcrypt.hashSync(newPassword, 10);
-      // console.log(hashedPassword)
-      
-      users[0].password = hashedPassword;
-      await users[0].save();
-
-      return res.status(200).json({ message: 'Password reset successfully' });
-    } else {
-      return res.status(404).json({ message: 'User not found' });
-    }
-  } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ message: 'Invalid token' });
-    }
-    console.error(error);
-    return res.status(500).json({ message: 'Server error' });
   }
 });
 
