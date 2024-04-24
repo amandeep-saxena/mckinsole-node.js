@@ -12,6 +12,8 @@ const Admin = require("./model/Admin");
 // const Admin = require("./model/Admin");
 var crypto = require("crypto");
 
+const mailSender = require("./utils/mailSender");
+
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(bodyParser.json());
@@ -22,8 +24,8 @@ mongoose
   .connect(
     "mongodb+srv://saxenaman903:7iBj7Pkhtfj2bMGl@cluster0.j2jkj8p.mongodb.net/",
     {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+      // useNewUrlParser: true,
+      // useUnifiedTopology: true,
     }
   )
   .then(() => console.log("Connected! successfull-------- "));
@@ -41,7 +43,7 @@ function generateCaptcha() {
 }
 
 const checkPasswordValidity = (value) => {
-  if (value.includes(' ')) {
+  if (value.includes(" ")) {
     return "Password must not contain Whitespaces.";
   }
 
@@ -53,24 +55,24 @@ const checkPasswordValidity = (value) => {
   // Iterate through each character of the password
   for (let i = 0; i < value.length; i++) {
     const char = value[i];
-    
+
     // Check for uppercase letters
-    if (char >= 'A' && char <= 'Z') {
+    if (char >= "A" && char <= "Z") {
       hasUppercase = true;
     }
-    
+
     // Check for lowercase letters
-    if (char >= 'a' && char <= 'z') {
+    if (char >= "a" && char <= "z") {
       hasLowercase = true;
     }
-    
+
     // Check for numbers
-    if (char >= '0' && char <= '9') {
+    if (char >= "0" && char <= "9") {
       hasNumber = true;
     }
-    
+
     // Check for special symbols
-    const symbols = '~`!@#$%^&*()--+={}[\\]|:;"\'<>,.?/_₹';
+    const symbols = "~`!@#$%^&*()--+={}[\\]|:;\"'<>,.?/_₹";
     if (symbols.includes(char)) {
       hasSymbol = true;
     }
@@ -142,7 +144,7 @@ app.post("/register", async (req, res) => {
 
   const passwordValidationMessage = checkPasswordValidity(password);
   if (passwordValidationMessage) {
-    return res.status(400).json({ message: passwordValidationMessage });
+    return res.status(400).json({ message: passwordValidationMessage }); 
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -164,6 +166,12 @@ app.post("/register", async (req, res) => {
     password: bcrypt.hashSync(req.body.password, 8),
   });
   await user.save();
+
+  mailSender(
+    email,
+    titel = "Hello from Nodemailer",
+    body = "User Register Successful.",
+  );
 
   res.status(201).send(user);
 

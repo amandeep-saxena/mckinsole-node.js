@@ -10,7 +10,7 @@ PM2 server :
 7. pm2 kill 0/name
 8. pm2 ecosystem
 9. npm i pm2-logrotate
-10.pm2 start --no-daemon app.js
+10. pm2 start --no-daemon app.js
 11. pm2 restart app.js
 
 12. pm2 link ixv2bur0xkh1117 genlr4uz9eyu2xo

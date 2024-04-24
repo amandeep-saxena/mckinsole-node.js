@@ -8,9 +8,9 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    // unique: true,
+    required: true,
+    unique: true,
     // lowercase: true,
-    // trim: true,
     // required: true,
     // validate: {
     //   validator: function (v) {
@@ -27,7 +27,10 @@ const userSchema = new mongoose.Schema({
   newPassword: {
     type: String,
   },
-  token: { type: String },
+  token: {
+    type: String,
+    required: false,
+  },
 });
 
 module.exports = new mongoose.model("Login", userSchema);
