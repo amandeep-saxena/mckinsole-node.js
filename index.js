@@ -9,8 +9,10 @@ const verifyToken = require("./middleware/authMiddleware");
 const jwt = require("jsonwebtoken");
 var morgan = require("morgan");
 const Admin = require("./model/Admin");
+const otpGenerator = require('otp-generator');
+const OTP = require('./model/otpModel');
 // const Admin = require("./model/Admin");
-var crypto = require("crypto");
+// var crypto = require("crypto");
 
 const mailSender = require("./utils/mailSender");
 
@@ -132,14 +134,60 @@ const checkPasswordValidity = (value) => {
   // return null;
 };
 
+
+app.post("/otp" ,async(req,res) => {
+  try {
+    const { email } = req.body;
+    
+    const checkUserPresent = await Login.findOne({ email });
+  
+    if (checkUserPresent) {
+      return res.status(401).json({
+        success: false,
+        message: 'User is already registered',
+      });
+    }
+
+    let otp = otpGenerator.generate(6, {
+      upperCaseAlphabets: true,
+      lowerCaseAlphabets: true,
+      specialChars: true,
+    });
+
+    let result = await OTP.findOne({ otp: otp });
+    while (result) {
+      otp = otpGenerator.generate(6, {
+        upperCaseAlphabets: false,
+      });
+      result = await OTP.findOne({ otp: otp });
+    }
+    const otpPayload = { email, otp };
+    const otpBody = await OTP.create(otpPayload);
+    console.log(otpBody)
+    res.status(200).json({
+      success: true,
+      message: 'OTP sent successfully',
+      otp,
+    });
+  } catch (error) {
+    console.log(error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+})
+
+
+
 app.post("/register", async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password , otp} = req.body;
 
   if (!name) {
     return res.status(400).json({ message: "Nman Filed insert data" });
   }
   if (!password) {
     return res.status(400).json({ message: "password Filed  insert data" });
+  }
+  if(!otp){
+    return res.status(400).json({message: "OTP Filed  insert data"})
   }
 
   const passwordValidationMessage = checkPasswordValidity(password);
@@ -156,9 +204,19 @@ app.post("/register", async (req, res) => {
   // }
   // Check if user already exists
   const existingUser = await Login.findOne({ email });
-  if (existingUser) {
+  if (existingUser) { 
     return res.status(400).json({ message: "User already exists" });
   }
+
+
+  const response = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
+  if (response.length === 0 || otp !== response[0].otp) {
+    return res.status(400).json({
+      success: false,
+      message: 'The OTP is not valid',
+    });
+  }
+  console.log(response)
 
   const user = new Login({
     name,
