@@ -20,8 +20,8 @@ PM2 server :
 
 <!-- code push on github command -->
 
-git init.
-git add -A.
-git commit -m 'Added my project'
-git remote add origin git@github.com: sammy/my-new-project.git.
-git push -u -f origin main.
+1. git init.
+2. git add -A.
+3. git commit -m 'Added my project'
+4. git remote add origin git@github.com: sammy/my-new-project.git.
+5. git push -u -f origin main.

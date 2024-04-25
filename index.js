@@ -138,22 +138,12 @@ const checkPasswordValidity = (value) => {
 app.post("/otp" ,async(req,res) => {
   try {
     const { email } = req.body;
-    
     const checkUserPresent = await Login.findOne({ email });
-  
-    if (checkUserPresent) {
-      return res.status(401).json({
-        success: false,
-        message: 'User is already registered',
-      });
+    if (!checkUserPresent) {
+      return res.status(401).json({ success: false,  message: 'User is already registered',});
     }
 
-    let otp = otpGenerator.generate(6, {
-      upperCaseAlphabets: true,
-      lowerCaseAlphabets: true,
-      specialChars: true,
-    });
-
+    let otp = otpGenerator.generate(6, {  upperCaseAlphabets: true,  lowerCaseAlphabets: true,  specialChars: true,  });
     let result = await OTP.findOne({ otp: otp });
     while (result) {
       otp = otpGenerator.generate(6, {
@@ -161,6 +151,7 @@ app.post("/otp" ,async(req,res) => {
       });
       result = await OTP.findOne({ otp: otp });
     }
+
     const otpPayload = { email, otp };
     const otpBody = await OTP.create(otpPayload);
     console.log(otpBody)
