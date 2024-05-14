@@ -1,5 +1,6 @@
 const express = require("express");
 const app = express();
+const path = require("path");
 const port = 7000;
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
@@ -9,10 +10,9 @@ const verifyToken = require("./middleware/authMiddleware");
 const jwt = require("jsonwebtoken");
 var morgan = require("morgan");
 const Admin = require("./model/Admin");
-const otpGenerator = require('otp-generator');
-const OTP = require('./model/otpModel');
-// const Admin = require("./model/Admin");
-// var crypto = require("crypto");
+const otpGenerator = require("otp-generator");
+const OTP = require("./model/otpModel");
+const multer = require("multer");
 
 const mailSender = require("./utils/mailSender");
 
@@ -20,14 +20,27 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(bodyParser.json());
 
+var storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads");
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.fieldname + "-" + Date.now() + ".jpg");
+  },
+});
+
+const upload = multer({
+  dest: "uploads/",
+  Storage: storage,
+});
 //database  ///
 
 mongoose
   .connect(
     "mongodb+srv://saxenaman903:7iBj7Pkhtfj2bMGl@cluster0.j2jkj8p.mongodb.net/",
     {
-      // useNewUrlParser: true,
-      // useUnifiedTopology: true,
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
     }
   )
   .then(() => console.log("Connected! successfull-------- "));
@@ -134,16 +147,23 @@ const checkPasswordValidity = (value) => {
   // return null;
 };
 
-
-app.post("/otp" ,async(req,res) => {
+app.post("/otp", async (req, res) => {
   try {
     const { email } = req.body;
     const checkUserPresent = await Login.findOne({ email });
+
     if (!checkUserPresent) {
-      return res.status(401).json({ success: false,  message: 'User is already registered',});
+      return res
+        .status(401)
+        .json({ success: false, message: "User is already registered" });
     }
 
-    let otp = otpGenerator.generate(6, {  upperCaseAlphabets: true,  lowerCaseAlphabets: true,  specialChars: true,  });
+    let otp = otpGenerator.generate(6, {
+      upperCaseAlphabets: true,
+      lowerCaseAlphabets: true,
+      specialChars: true,
+    });
+
     let result = await OTP.findOne({ otp: otp });
     while (result) {
       otp = otpGenerator.generate(6, {
@@ -154,22 +174,20 @@ app.post("/otp" ,async(req,res) => {
 
     const otpPayload = { email, otp };
     const otpBody = await OTP.create(otpPayload);
-    console.log(otpBody)
+    console.log(otpBody);
     res.status(200).json({
       success: true,
-      message: 'OTP sent successfully',
+      message: "OTP sent successfully",
       otp,
     });
   } catch (error) {
     console.log(error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
-})
-
-
+});
 
 app.post("/register", async (req, res) => {
-  const { name, email, password , otp} = req.body;
+  const { name, email, password, otp } = req.body;
 
   if (!name) {
     return res.status(400).json({ message: "Nman Filed insert data" });
@@ -177,13 +195,13 @@ app.post("/register", async (req, res) => {
   if (!password) {
     return res.status(400).json({ message: "password Filed  insert data" });
   }
-  if(!otp){
-    return res.status(400).json({message: "OTP Filed  insert data"})
+  if (!otp) {
+    return res.status(400).json({ message: "OTP Filed  insert data" });
   }
 
   const passwordValidationMessage = checkPasswordValidity(password);
   if (passwordValidationMessage) {
-    return res.status(400).json({ message: passwordValidationMessage }); 
+    return res.status(400).json({ message: passwordValidationMessage });
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -195,19 +213,18 @@ app.post("/register", async (req, res) => {
   // }
   // Check if user already exists
   const existingUser = await Login.findOne({ email });
-  if (existingUser) { 
+  if (existingUser) {
     return res.status(400).json({ message: "User already exists" });
   }
-
 
   const response = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
   if (response.length === 0 || otp !== response[0].otp) {
     return res.status(400).json({
       success: false,
-      message: 'The OTP is not valid',
+      message: "The OTP is not valid",
     });
   }
-  console.log(response)
+  console.log(response);
 
   const user = new Login({
     name,
@@ -218,8 +235,8 @@ app.post("/register", async (req, res) => {
 
   mailSender(
     email,
-    titel = "Hello from Nodemailer",
-    body = "User Register Successful.",
+    (titel = "Hello from Nodemailer"),
+    (body = "User Register Successful.")
   );
 
   res.status(201).send(user);
@@ -391,6 +408,44 @@ app.post("/verify", (req, res) => {
   }
 });
 
+app.post("/upload", upload.single("file"), async (req, res) => {
+  try {
+    const { name } = req.body;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).send({ message: "Please upload a file!" });
+    }
+    const existingUser = await Admin.findOne({ name });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+    const filePath = file.path;
+    await Admin.create({ name, file: filePath });
+
+    res.send("File uploaded successfully!");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+  // const file = req.file;
+  // console.log(file);
+
+  // await Admin.create(file).then((res) => {
+  //   console.log(res)
+  //   res.send("File uploaded successfully!")
+  // })
+  // if (req.file == undefined) {
+  //     return res.status(400).send({ message: "Please upload a file!" });
+  //   }
+
+  //   res.status(200).send({
+  //     message: "Uploaded the file successfully: " + req.file.originalname,
+  //   });
+
+  // res.send("File uploaded successfully!");
+});
+
 // app.post("/submit", (req, res) => {
 //   const name = req.body.name;
 
@@ -423,6 +478,10 @@ app.post("/verify", (req, res) => {
 // app.get("/12", verifyToken, (req, res) => {
 //   res.status(200).json({ message: "Protected route accessed" });
 // });
+
+app.post("/", (req, res) => {
+  res.send("hiii");
+});
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);

@@ -5,19 +5,8 @@ const userSchema = new mongoose.Schema({
     type: String,
     require: true,
   },
-  email: {
+  file: {
     type: String,
-    return: true,
-  },
-  dob: {
-    type: Date,
-  },
-  phoneNumber: {
-    type: Number,
-  },
-
-  File: {
-    type: Boolean,
   },
 });
 

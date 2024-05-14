@@ -15,13 +15,6 @@ const mailSender = async (email, titel, body) => {
       to: email,
       subject: titel,
       text: body,
-      attachments: [
-        {
-          filename: "istockphoto-1390884026-1024x1024", 
-          content: image, 
-          encoding: "base64", 
-        },
-      ],
     });
     console.log("Email info: ", info);
     return info;

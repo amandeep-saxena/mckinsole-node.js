@@ -22,8 +22,8 @@ async function sendVerificationEmail(email, otp) {
     const mailResponse = await mailSender(
       email,
       "Verification Email",
-      `<h1>Please confirm your OTP</h1>
-       <p>Here is your OTP code: ${otp}</p>`
+      `Please confirm your OTPs
+       Here is your OTP code: ${otp}`
     );
     console.log("Email sent successfully: ", mailResponse);
   } catch (error) {
