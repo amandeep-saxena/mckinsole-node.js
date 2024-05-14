@@ -13,6 +13,8 @@ const Admin = require("./model/Admin");
 const otpGenerator = require("otp-generator");
 const OTP = require("./model/otpModel");
 const multer = require("multer");
+const xlsx = require("xlsx");
+const fs = require("fs");
 
 const mailSender = require("./utils/mailSender");
 
@@ -29,9 +31,19 @@ var storage = multer.diskStorage({
   },
 });
 
+const storage1 = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+
 const upload = multer({
   dest: "uploads/",
   Storage: storage,
+  Storage: storage1,
 });
 //database  ///
 
@@ -478,6 +490,66 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 // app.get("/12", verifyToken, (req, res) => {
 //   res.status(200).json({ message: "Protected route accessed" });
 // });
+
+app.post("/upload1", upload.single("file"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).send("No file uploaded.");
+  }
+
+  const filePath = req.file.path;
+
+  try {
+    const workbook = xlsx.readFile(filePath);
+    const sheetNames = workbook.SheetNames;
+    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetNames[0]]);
+
+    res.status(200).json({ data });
+  } catch (error) {
+    res.status(500).send("Error processing file.");
+  }
+});
+
+app.get("/download", async (req, res) => {
+  const data = await Login.find().exec();
+  console.log(data);
+
+  const transformedData = data.map((record) => ({
+    name: record.name,
+    email: record.email,
+    password: record.password,
+    newPassword: record.newPassword,
+    token: record.token,
+  }));
+
+  const workbook = xlsx.utils.book_new();
+  const worksheet = xlsx.utils.json_to_sheet(transformedData);
+  console.log(worksheet);
+  xlsx.utils.book_append_sheet(workbook, worksheet, "loginUser");
+
+  const filesDir = path.join(__dirname, "files");
+  if (!fs.existsSync(filesDir)) {
+    fs.mkdirSync(filesDir);
+  }
+
+  const filePath = path.join(filesDir, "data.xlsx");
+  xlsx.writeFile(workbook, filePath);
+
+  res.setHeader("Content-Disposition", "attachment; filename=data.xlsx");
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
+
+  res.download(filePath, (err) => {
+    if (err) {
+      res.status(500).send("Could not download the file.");
+    } else {
+      fs.unlink(filePath, (err) => {
+        if (err) console.error("Failed to delete file:", err);
+      });
+    }
+  });
+});
 
 app.post("/", (req, res) => {
   res.send("hiii");
