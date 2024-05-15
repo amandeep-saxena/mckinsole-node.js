@@ -22,40 +22,59 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(bodyParser.json());
 
-var storage = multer.diskStorage({
+const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads");
+    let uploadDir = "uploads/";
+    if (
+      file.mimetype ===
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ) {
+      uploadDir = "xlse/";
+    }
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    cb(null, file.fieldname + "-" + Date.now() + ".jpg");
+    const ext = path.extname(file.originalname);
+    const name = file.fieldname + "-" + Date.now() + ext;
+    cb(null, name);
   },
 });
 
-const storage1 = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/");
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
-});
+const upload = multer({ storage: storage });
+// var storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, "uploads");
+//   },
+//   filename: function (req, file, cb) {
+//     cb(null, file.fieldname + "-" + Date.now() + ".jpg");
+//   },
+// });
 
-const upload = multer({
-  dest: "uploads/",
-  Storage: storage,
-  Storage: storage1,
-});
+// const storage1 = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, "xlse");
+//   },
+//   filename: function (req, file, cb) {
+//     cb(null, Date.now() + path.extname(file.originalname));
+//   },
+// });
+
+// const upload = multer({
+//   dest: "uploads/",
+//   Storage: storage,
+// });
+
 //database  ///
 
 mongoose
   .connect(
-    "mongodb+srv://saxenaman903:7iBj7Pkhtfj2bMGl@cluster0.j2jkj8p.mongodb.net/",
-    {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    }
+    "mongodb+srv://saxenaman903:7iBj7Pkhtfj2bMGl@cluster0.j2jkj8p.mongodb.net/"
   )
-  .then(() => console.log("Connected! successfull-------- "));
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => console.error("Failed to connect to MongoDB", err));
 
 function generateCaptcha() {
   const chars =
@@ -420,7 +439,7 @@ app.post("/verify", (req, res) => {
   }
 });
 
-app.post("/upload", upload.single("file"), async (req, res) => {
+app.post("/photo", upload.single("file"), async (req, res) => {
   try {
     const { name } = req.body;
     const file = req.file;
@@ -428,10 +447,10 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     if (!file) {
       return res.status(400).send({ message: "Please upload a file!" });
     }
-    const existingUser = await Admin.findOne({ name });
-    if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
-    }
+    // const existingUser = await Admin.findOne({ name });
+    // if (existingUser) {
+    //   return res.status(400).json({ message: "User already exists" });
+    // }
     const filePath = file.path;
     await Admin.create({ name, file: filePath });
 
@@ -491,7 +510,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 //   res.status(200).json({ message: "Protected route accessed" });
 // });
 
-app.post("/upload1", upload.single("file"), (req, res) => {
+app.post("/upload1", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded.");
   }
@@ -502,9 +521,23 @@ app.post("/upload1", upload.single("file"), (req, res) => {
     const workbook = xlsx.readFile(filePath);
     const sheetNames = workbook.SheetNames;
     const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetNames[0]]);
+    // console.log(data);
 
-    res.status(200).json({ data });
+    var report = data.map((item) => ({
+      name: item.name,
+      email: item.email,
+      password: item.password,
+      newPassword: item.newPassword,
+      token: item.token,
+    }));
+    // console.log(report)
+
+    const savedData = await Login.create(report);
+    console.log(savedData);
+
+    res.status(200).send({ savedData });
   } catch (error) {
+    console.log(error);
     res.status(500).send("Error processing file.");
   }
 });
