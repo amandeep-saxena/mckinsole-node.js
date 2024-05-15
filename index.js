@@ -271,21 +271,21 @@ app.post("/register", async (req, res) => {
   );
 
   res.status(201).send(user);
-
-  // const token = jwt.sign(
-  //   { user_id: user._id, email },
-  //   "aman@123",
-  //   {
-  //     expiresIn: "1m",
-  //   }
-  // );
-  // user.token = token;
-
-  //   Generate JWT token
-  //   const token = jwt.sign({ userId: user._id, email: user.email }, 'aman@12', { expiresIn: '1h' });
-
-  //      res.status(201).json({ token });
 });
+
+// const token = jwt.sign(
+//   { user_id: user._id, email },
+//   "aman@123",
+//   {
+//     expiresIn: "1m",
+//   }
+// );
+// user.token = token;
+
+//   Generate JWT token
+//   const token = jwt.sign({ userId: user._id, email: user.email }, 'aman@12', { expiresIn: '1h' });
+
+//      res.status(201).json({ token });
 
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -459,22 +459,6 @@ app.post("/photo", upload.single("file"), async (req, res) => {
     console.error(error);
     res.status(500).send("Internal Server Error");
   }
-  // const file = req.file;
-  // console.log(file);
-
-  // await Admin.create(file).then((res) => {
-  //   console.log(res)
-  //   res.send("File uploaded successfully!")
-  // })
-  // if (req.file == undefined) {
-  //     return res.status(400).send({ message: "Please upload a file!" });
-  //   }
-
-  //   res.status(200).send({
-  //     message: "Uploaded the file successfully: " + req.file.originalname,
-  //   });
-
-  // res.send("File uploaded successfully!");
 });
 
 // app.post("/submit", (req, res) => {
