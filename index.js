@@ -14,6 +14,7 @@ const otpGenerator = require("otp-generator");
 const OTP = require("./model/otpModel");
 const multer = require("multer");
 const xlsx = require("xlsx");
+const countryData = require("country-code-flag-phone-extension-json");
 const fs = require("fs");
 
 const mailSender = require("./utils/mailSender");
@@ -505,7 +506,7 @@ app.post("/upload1", upload.single("file"), async (req, res) => {
     const workbook = xlsx.readFile(filePath);
     const sheetNames = workbook.SheetNames;
     const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetNames[0]]);
-    // console.log(data);
+    console.log(data);
 
     var report = data.map((item) => ({
       name: item.name,
@@ -514,9 +515,9 @@ app.post("/upload1", upload.single("file"), async (req, res) => {
       newPassword: item.newPassword,
       token: item.token,
     }));
-    // console.log(report)
+    console.log(report);
 
-    const savedData = await Login.create(report);
+    const savedData = await Login.insertMany(report);
     console.log(savedData);
 
     res.status(200).send({ savedData });
@@ -571,6 +572,64 @@ app.get("/download", async (req, res) => {
 app.post("/", (req, res) => {
   res.send("hiii");
 });
+
+
+
+
+  
+const countries = [
+  {
+    name: "Afghanistan",
+    alpha2Code: "AF",
+    phoneCode: "+93",
+    flag: "🇦🇫"
+  },
+  {
+    name: "Albania",
+    alpha2Code: "AL",
+    phoneCode: "+355",
+    flag: "🇦🇱"
+  },
+  // More countries...
+];
+
+app.get("/country-codes", (req, res) => {
+  try {
+    const countryCodes = countries.map((country) => ({
+      name: country.name,
+      code: country.alpha2Code,
+      phoneExtension: country.phoneCode,
+      flag: country.flag,
+    }));
+    res.status(200).json(countryCodes);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to retrieve country codes",
+      error: error.message,
+    });
+  }
+});
+
+const axios = require('axios')
+
+
+app.get("/countries", async (req, res) => {
+  try {
+    const response = await axios.get('https://restcountries.com/v3.1/all');
+    const countries = response.data.map(country => ({
+      name: country.name.common,
+      dial_code: country.idd.root + (country.idd.suffixes ? country.idd.suffixes[0] : ''),
+      flag: country.flags.svg || country.flags.png,  // Use svg first, fallback to png
+    }));
+    res.json(countries);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching country data" });
+  }
+});
+
+
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
