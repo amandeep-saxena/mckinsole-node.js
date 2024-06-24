@@ -573,22 +573,18 @@ app.post("/", (req, res) => {
   res.send("hiii");
 });
 
-
-
-
-  
 const countries = [
   {
     name: "Afghanistan",
     alpha2Code: "AF",
     phoneCode: "+93",
-    flag: "🇦🇫"
+    flag: "🇦🇫",
   },
   {
     name: "Albania",
     alpha2Code: "AL",
     phoneCode: "+355",
-    flag: "🇦🇱"
+    flag: "🇦🇱",
   },
   // More countries...
 ];
@@ -610,22 +606,192 @@ app.get("/country-codes", (req, res) => {
   }
 });
 
-const axios = require('axios')
-
+const axios = require("axios");
 
 app.get("/countries", async (req, res) => {
   try {
-    const response = await axios.get('https://restcountries.com/v3.1/all');
-    const countries = response.data.map(country => ({
+    const response = await axios.get("https://restcountries.com/v3.1/all");
+    const countries = response.data.map((country) => ({
       name: country.name.common,
-      dial_code: country.idd.root + (country.idd.suffixes ? country.idd.suffixes[0] : ''),
-      flag: country.flags.svg || country.flags.png,  // Use svg first, fallback to png
+      dial_code:
+        country.idd.root +
+        (country.idd.suffixes ? country.idd.suffixes[0] : ""),
+      flag: country.flags.svg || country.flags.png, // Use svg first, fallback to png
     }));
     res.json(countries);
   } catch (error) {
     res
       .status(500)
       .json({ error: "An error occurred while fetching country data" });
+  }
+});
+
+app.get("/countries1", async (req, res) => {
+  try {
+    const response = await axios.get("https://restcountries.com/v3.1/all");
+    const countries = response.data.map((country) => ({
+      flag: `https://flagcdn.com/w320/${country.cca2.toLowerCase()}.png`,
+      dial_code:
+        country.idd.root +
+        (country.idd.suffixes ? country.idd.suffixes[0] : ""),
+    }));
+    console.log("Fetched countries:", countries);
+    res.json(countries);
+  } catch (error) {
+    console.error("Error fetching country data:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching country data" });
+  }
+});
+
+app.get("/countries", async (req, res) => {
+  try {
+    const response = await axios.get("https://restcountries.com/v3.1/all");
+
+    const countries = await Promise.all(
+      response.data.map(async (country) => {
+        const flagUrl = `https://flagcdn.com/w320/${country.cca2.toLowerCase()}.png`;
+        const flagBase64 = await getBase64FromUrl(flagUrl);
+
+        return {
+          flag: flagBase64,
+          dial_code:
+            country.idd.root +
+            (country.idd.suffixes ? country.idd.suffixes[0] : ""),
+        };
+      })
+    );
+
+    console.log("Fetched countries with base64 flags:", countries);
+    res.json(countries);
+  } catch (error) {
+    console.error("Error fetching country data:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching country data" });
+  }
+});
+
+// Function to convert image URL to base64
+async function getBase64FromUrl(url) {
+  const response = await axios.get(url, { responseType: "arraybuffer" });
+  const base64 = Buffer.from(response.data, "binary").toString("base64");
+  return `data:image/png;base64,${base64}`;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const axios = require('axios');
+const fs = require('fs');
+const { promisify } = require('util');
+
+const readFileAsync = promisify(fs.readFile);
+
+apiRoutes.get("/countries12", async (req, res) => {
+  try {
+    const response = await axios.get("https://restcountries.com/v3.1/all");
+    const countries = response.data.map(async (country) => {
+      const flagUrl = `https://flagcdn.com/w320/${country.cca2.toLowerCase()}.png`;
+      const flagBase64 = await getBase64FromUrl(flagUrl);
+      return {
+        flag: flagBase64,
+        dial_code:
+          country.idd.root +
+          (country.idd.suffixes ? country.idd.suffixes[0] : ""),
+      };
+    });
+    const countriesWithData = await Promise.all(countries);
+    console.log("Fetched countries:", countriesWithData);
+    res.json(countriesWithData);
+  } catch (error) {
+    console.error("Error fetching country data:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching country data" });
+  }
+});
+
+async function getBase64FromUrl(url) {
+  try {
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer'
+    });
+    const base64 = Buffer.from(response.data, 'binary').toString('base64');
+    return `data:image/png;base64,${base64}`;
+  } catch (error) {
+    console.error(`Error fetching ${url}:`, error);
+    return null;
+  }
+}
+
+
+
+
+apiRoutes.post("/submit", async (req, res) => {
+  try {
+    console.log(req.body);
+    const formData = await FormData.create(req.body);
+
+    const emailSubject = "Thank you for your message!";
+    const emailHtml = `
+        <p>Hi ${formData.firstName},</p>
+        <p>Thank you for reaching out. We received your message:</p>
+          <ul>
+      <li><strong>First Name:</strong> ${formData.firstName}</li>
+        <li><strong>Last Name:</strong> ${formData.lastName}</li>
+        <li><strong>Email:</strong> ${formData.email}</li>git
+        <li><strong>Country:</strong> ${formData.country}</li>
+       <li><strong>Phone:</strong> ${formData.phone}</li>
+        <li><strong>Company:</strong> ${formData.company}</li>
+      </ul>
+        <p>We will get back to you shortly.</p>
+        <p>Best regards,</p>
+    `;
+    // const emailHtml = `
+    //   <p><strong>User Details Submitted:</strong></p>
+    //   <ul>
+    //     <li><strong>First Name:</strong> ${formData.firstName}</li>
+    //     <li><strong>Last Name:</strong> ${formData.lastName}</li>
+    //     <li><strong>Email:</strong> ${formData.email}</li>
+    //     <li><strong>Country:</strong> ${formData.country}</li>
+    //     <li><strong>Phone:</strong> ${formData.phone}</li>
+    //     <li><strong>Company:</strong> ${formData.company}</li>
+    //   </ul>
+    // `;
+
+    mailer(
+      // subject: emailSubject,
+      // html: emailHtml,
+      formData.email,
+      emailSubject,
+      emailHtml
+    );
+
+    res
+      .status(201)
+      .json({ response: formData, message: "Form submitted successfully" });
+  } catch (error) {
+    console.error("Error submitting form:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while submitting the form" });
   }
 });
 
