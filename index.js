@@ -14,9 +14,9 @@ const otpGenerator = require("otp-generator");
 const OTP = require("./model/otpModel");
 const multer = require("multer");
 const xlsx = require("xlsx");
-const countryData = require("country-code-flag-phone-extension-json");
+// const countryData = require("country-code-flag-phone-extension-json");
 const fs = require("fs");
-
+// const Modem = require("node-modem");
 const mailSender = require("./utils/mailSender");
 
 app.use(morgan("dev"));
@@ -68,7 +68,17 @@ const upload = multer({ storage: storage });
 //   Storage: storage,
 // });
 
-//database  ///
+// const SerialPort = require("serialport");
+// const Readline = require("@serialport/parser-readline");
+
+// const serialPort = SerialPort("COM1", { baudRate: 9600 });
+// const parser = serialPort.pipe(new Readline({ delimiter: "\r\n" }));
+
+function generateOTP() {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+const otpStore = new Map();
 
 mongoose
   .connect(
@@ -182,14 +192,13 @@ const checkPasswordValidity = (value) => {
 app.post("/otp", async (req, res) => {
   try {
     const { email } = req.body;
-    const checkUserPresent = await Login.findOne({ email });
+    // const checkUserPresent = await Login.findOne({ email });
 
-    if (!checkUserPresent) {
-      return res
-        .status(401)
-        .json({ success: false, message: "User is already registered" });
-    }
-
+    // if (!checkUserPresent) {
+    //   return res
+    //     .status(401)
+    //     .json({ success: false, message: "User is already registered" });
+    // }
     let otp = otpGenerator.generate(6, {
       upperCaseAlphabets: true,
       lowerCaseAlphabets: true,
@@ -202,10 +211,11 @@ app.post("/otp", async (req, res) => {
         upperCaseAlphabets: false,
       });
       result = await OTP.findOne({ otp: otp });
+      console.log(result);
     }
 
     const otpPayload = { email, otp };
-    const otpBody = await OTP.create(otpPayload);
+    const otpBody = await OTP.create(otpPayload).select("-otp-body");
     console.log(otpBody);
     res.status(200).json({
       success: true,
@@ -216,6 +226,24 @@ app.post("/otp", async (req, res) => {
     console.log(error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
+});
+
+app.post("/loginOTP", async (req, res) => {
+  const { email, otp } = req.body;
+
+  const otpEntry = await OTP.findOne({ email, otp });
+
+  if (!otpEntry) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid OTP or email",
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Login successful",
+  });
 });
 
 app.post("/register", async (req, res) => {
@@ -365,7 +393,7 @@ app.post("/reset-password", async (req, res) => {
 
     if (users.length > 0) {
       const hashedPassword = bcrypt.hashSync(newPassword, 10);
-      // console.log(hashedPassword)
+      console.log(hashedPassword);
 
       users[0].password = hashedPassword;
       await users[0].save();
@@ -499,9 +527,7 @@ app.post("/upload1", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded.");
   }
-
   const filePath = req.file.path;
-
   try {
     const workbook = xlsx.readFile(filePath);
     const sheetNames = workbook.SheetNames;
@@ -680,31 +706,13 @@ async function getBase64FromUrl(url) {
   return `data:image/png;base64,${base64}`;
 }
 
+// const axios = require('axios');
+// const fs = require('fs');
+// const { promisify } = require('util');
 
+// const readFileAsync = promisify(fs.readFile);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const axios = require('axios');
-const fs = require('fs');
-const { promisify } = require('util');
-
-const readFileAsync = promisify(fs.readFile);
-
-apiRoutes.get("/countries12", async (req, res) => {
+app.get("/countries12", async (req, res) => {
   try {
     const response = await axios.get("https://restcountries.com/v3.1/all");
     const countries = response.data.map(async (country) => {
@@ -731,9 +739,9 @@ apiRoutes.get("/countries12", async (req, res) => {
 async function getBase64FromUrl(url) {
   try {
     const response = await axios.get(url, {
-      responseType: 'arraybuffer'
+      responseType: "arraybuffer",
     });
-    const base64 = Buffer.from(response.data, 'binary').toString('base64');
+    const base64 = Buffer.from(response.data, "binary").toString("base64");
     return `data:image/png;base64,${base64}`;
   } catch (error) {
     console.error(`Error fetching ${url}:`, error);
@@ -741,10 +749,7 @@ async function getBase64FromUrl(url) {
   }
 }
 
-
-
-
-apiRoutes.post("/submit", async (req, res) => {
+app.post("/submit", async (req, res) => {
   try {
     console.log(req.body);
     const formData = await FormData.create(req.body);
@@ -795,7 +800,271 @@ apiRoutes.post("/submit", async (req, res) => {
   }
 });
 
+// app.post("/send-otp", (req, res) => {
+//   const { phoneNumber } = req.body;
+//   const otp = generateOTP();
+//   otpStore.set(phoneNumber, otp);
 
+//   function sendSMS(message) {
+//     serialPort.write(`AT+CMGF=1\r\n`); // Set SMS mode to text
+//     serialPort.write(`AT+CMGS="${phoneNumber}"\r\n`); // Set recipient number
+//     serialPort.write(`${message}\r\n`); // Message to send
+//     serialPort.write(Buffer.from([26])); // End SMS with Ctrl+Z
+//   }
+//   parser.on("data", (data) => {
+//     console.log("Received:", data);
+
+//     if (data.includes("OK")) {
+//       console.log(`SMS sent successfully to ${phoneNumber}`);
+//       res.status(200).json({
+//         success: true,
+//         message: `OTP sent successfully to ${phoneNumber}`,
+//       });
+//     } else if (data.includes("ERROR")) {
+//       console.error("Error sending SMS:", data);
+//       res.status(500).json({
+//         success: false,
+//         message: "Failed to send OTP via SMS",
+//         error: data,
+//       });
+//     }
+//   });
+
+//   sendSMS(`Your OTP for verification is: ${otp}`);
+// });
+
+// const Modem = require("node-modem");
+// // var Modem = require('modem').Modem()
+
+// const modem = new Modem();
+
+// function generateOTP() {
+//   return Math.floor(1000 + Math.random() * 9000).toString();
+// }
+
+// const otpStore = new Map();
+
+// app.post("/send-otp", async (req, res) => {
+//   const { phoneNumber } = req.body;
+
+//   const otp = generateOTP();
+
+//   otpStore.set(phoneNumber, otp);
+
+//   try {
+//     await modem.open("/dev/ttyUSB0");
+
+//     // Send SMS
+//     await modem.sendSMS(phoneNumber, `Your OTP for verification is: ${otp}`);
+
+//     // Close modem connection
+//     await modem.close();
+
+//     console.log(`OTP sent successfully to ${phoneNumber}`);
+
+//     res
+//       .status(200)
+//       .json({
+//         success: true,
+//         message: `OTP sent successfully to ${phoneNumber}`,
+//       });
+//   } catch (error) {
+//     console.error("Error sending OTP via SMS:", error);
+
+//     // Close modem connection in case of error
+//     await modem.close();
+
+//     res
+//       .status(500)
+//       .json({
+//         success: false,
+//         message: "Failed to send OTP via SMS",
+//         error: error.message,
+//       });
+//   }
+// });
+
+const redis = require("redis");
+const { promisify } = require("util");
+const { count } = require("console");
+
+// const redisClient = redis.createClient({
+//   host: "localhost",
+//   port: 7000,
+// });
+
+// redisClient.on("done" ,() => {
+//   console.log("done yes")
+// })
+
+// redisClient.on("error", (err) => {
+//   console.error("Redis client error:", err);
+// });
+
+// const redisGetAsync = promisify(redisClient.get).bind(redisClient);
+// const redisSetAsync = promisify(redisClient.set).bind(redisClient);
+
+// app.get("/get-flag", async (req, res) => {
+//   try {
+//     const cachedData = await redisGetAsync("countriesWithFlags");
+//     if (cachedData) {
+//       console.log("Fetching countries with flags from Redis cache");
+//       res.json(JSON.parse(cachedData));
+//       return;
+//     }
+
+//     const response = await axios.get("https://restcountries.com/v3.1/all");
+//     const countries = response.data.map((country) => ({
+//       flagUrl: `https://flagcdn.com/w320/${country.cca2.toLowerCase()}.png`,
+//       dial_code:
+//         country.idd.root +
+//         (country.idd.suffixes ? country.idd.suffixes[0] : ""),
+//     }));
+
+//     // Fetch flags asynchronously
+//     const countriesWithFlags = await Promise.all(
+//       countries.map(async (country) => {
+//         try {
+//           const flagResponse = await axios.get(country.flagUrl, {
+//             responseType: "arraybuffer",
+//           });
+//           const base64 = Buffer.from(flagResponse.data, "binary").toString(
+//             "base64"
+//           );
+//           return {
+//             flag: `data:image/png;base64,${base64}`,
+//             dial_code: country.dial_code,
+//           };
+//         } catch (error) {
+//           console.error(`Error fetching flag for ${country.dial_code}:`, error);
+//           return {
+//             flag: null,
+//             dial_code: country.dial_code,
+//           };
+//         }
+//       })
+//     );
+
+//     await redisSetAsync(
+//       "countriesWithFlags",
+//       JSON.stringify(countriesWithFlags),
+//       "EX",
+//       3600
+//     );
+
+//     console.log("Fetched countries with flags and stored in Redis");
+//     res.json(countriesWithFlags);
+//   } catch (error) {
+//     console.error("Error fetching country data:", error);
+//     res.status(500).json({ error: "Failed to fetch country data" });
+//   }
+// });
+
+const redisClient = redis.createClient();
+
+const REDIS_KEY_COUNTRIES = "countries";
+
+const apiUrl = "https://restcountries.com/v3.1/all";
+
+async function fetchAndCacheCountries() {
+  try {
+    redisClient.get(REDIS_KEY_COUNTRIES, async (err, cachedCountries) => {
+      if (err) {
+        console.error("Error retrieving data from Redis:", err);
+        throw err;
+      }
+
+      if (cachedCountries) {
+        console.log("Fetching countries data from Redis cache...");
+        const countries = JSON.parse(cachedCountries);
+        return countries; // Return cached data
+      } else {
+        console.log("Fetching countries data from API...");
+        const response = await axios.get(apiUrl);
+        const countries = response.data;
+
+        redisClient.setex(REDIS_KEY_COUNTRIES, 3600, JSON.stringify(countries));
+
+        return countries;
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    throw error;
+  }
+}
+
+app.get("/api/countries", async (req, res) => {
+  try {
+    const countries = await fetchAndCacheCountries();
+    res.json(countries);
+  } catch (error) {
+    console.error("Error retrieving countries data:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.get("/server", (req, res) => {
+  var counter;
+  for (let i = 0; i < 1000000000000000000000000; i++) {
+    counter++;
+  }
+  res.status(200).send({ counter });
+});
+
+
+
+// cron.schedule("*/1 * * * *", async () => {
+//   try {
+//     const response = await axios.get(
+//       "https://api.waqi.info/feed/Seoul/?token=ff593b24529a9291f881feab69d7a137cee8d145"
+//     );
+
+//     const airQualityIndex = new AirQualityIndex({
+//       status: response.data.status,
+//       data: response.data.data,
+//     });
+
+//     await airQualityIndex.save();
+//     console.log("Data saved successfully!");
+//   } catch (error) {
+//     console.error("Error fetching or saving data:", error);
+//   }
+// });
+
+
+
+
+// piRoutes.post("/contactUs", async (req, res) => {
+//   try {
+//     console.log("Request body:", req.body);
+//     const newContact = new ContactUs(req.body);
+//     const savedContact = await newContact.save();
+
+//     const email = req.body.emailId;
+//     const emailSubject =
+//       "Confirmation: Your Enquiry Has Been Successfully Created";
+//     const emailHtml = `
+//            <p>Hi ${req.body.name} ,</p>
+//            <p>Thank you for reaching out. We received your message:</p>
+//             <ul>
+//                     <li><strong> Name:</strong> ${req.body.name}</li>
+//                     <li><strong>Email:</strong> ${req.body.emailId}</li>
+//                     <li><strong>Phone:</strong> ${req.body.phoneNumbe}</li>
+//                     <li><strong>Subject:</strong> ${req.body.messages}</li>
+                   
+//            </ul>
+//           <p>We will get back to you shortly.</p>
+//           <p>Best regards,</p>
+//          <img src="cid:logoImage" alt="Company Logo" style="max-width: 100%; height: auto;">`;
+
+//     mailer([email, "contact@neuvays.com"], emailSubject, emailHtml);
+//     res.status(201).send(savedContact);
+//   } catch (error) {
+//     console.log(error);
+//     res.status(400).send({ message: error.message });
+//   }
+// });
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
