@@ -1012,7 +1012,25 @@ app.get("/server", (req, res) => {
   res.status(200).send({ counter });
 });
 
+async function fetchODataWithoutMetadata(url) {
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        Accept: "application/json;odata=nometadata",
+      },
+    });
 
+    const data = response.data;
+    console.log(data);
+    return data;
+  } catch (error) {
+    console.error("Error fetching OData:", error);
+  }
+}
+
+const odataUrl =
+  "https://services.odata.org/V3/Northwind/Northwind.svc/Products";
+fetchODataWithoutMetadata(odataUrl);
 
 // cron.schedule("*/1 * * * *", async () => {
 //   try {
@@ -1032,9 +1050,6 @@ app.get("/server", (req, res) => {
 //   }
 // });
 
-
-
-
 // piRoutes.post("/contactUs", async (req, res) => {
 //   try {
 //     console.log("Request body:", req.body);
@@ -1052,7 +1067,7 @@ app.get("/server", (req, res) => {
 //                     <li><strong>Email:</strong> ${req.body.emailId}</li>
 //                     <li><strong>Phone:</strong> ${req.body.phoneNumbe}</li>
 //                     <li><strong>Subject:</strong> ${req.body.messages}</li>
-                   
+
 //            </ul>
 //           <p>We will get back to you shortly.</p>
 //           <p>Best regards,</p>
