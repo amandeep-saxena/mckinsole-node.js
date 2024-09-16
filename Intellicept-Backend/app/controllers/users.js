@@ -24,34 +24,43 @@ module.exports = function (app) {
 
   apiRoutes.post("/login", async (req, res) => {
     const { email, password } = req.body;
+    await loginUser
+      .findOne({ where: { email } })
+      .then((user) => {
+        if (!user) {
+          return res.status(400).json({ message: "Invalid email or password" });
+        }
 
-    try {
-      const user = await loginUser.findOne({ where: { email } });
-      // if (!user) {
-      //   return res.status(400).json({ message: "Invalid email or password" });
-      // }
+        if (user.password !== password) {
+          return res.status(400).json({ message: "Invalid email or password" });
+        }
 
-      if (user.password !== password) {
-        return res.status(400).json({ message: "Invalid email or password" });
-      }
+        res.status(200).send({ status: "success" });
+      })
+      .catch((err) => res.status(400).json({ error: err }));
+    // try {
+    //   const user = await loginUser.findOne({ where: { email } });
+    //   console.log(user);
+    //   if (user.password !== password) {
+    //     return res.status(400).json({ message: "Invalid email or password" });
+    //   }
+    //   res.status(200).send({ status: "success" });
 
-      // const token = jwt.sign(
-      //   {
-      //     userId: user.id,
-      //     email: user.email,
-      //     password: user.password,
-      //     role: user.role,
-      //   },
-      //   "aman@12",
-      //   { expiresIn: "1h" }
-      // );
+    //   // const token = jwt.sign(
+    //   //   {
+    //   //     userId: user.id,
+    //   //     email: user.email,
+    //   //     password: user.password,
+    //   //     role: user.role,
+    //   //   },
+    //   //   "aman@12",
+    //   //   { expiresIn: "1h" }
+    //   // );
 
-      res.status(200).send({ status: "success" });
-
-      // res.status(200).send({ status: "success", Token: token });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
+    //   // res.status(200).send({ status: "success", Token: token });
+    // } catch (error) {
+    //   res.status(500).json({ error: error.message });
+    // }
   });
 
   apiRoutes.get("/token", verifyToken, async (req, res) => {

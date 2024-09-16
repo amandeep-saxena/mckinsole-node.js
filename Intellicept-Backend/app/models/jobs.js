@@ -8,9 +8,9 @@ const jobs = sequelize.define(
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: false,
-      required: true,
+      required: false,
       unique: true,
-      allowNull: false,
+      allowNull: true,
     },
     job_title: {
       type: DataTypes.STRING,
@@ -23,6 +23,10 @@ const jobs = sequelize.define(
     start_application_date: {
       type: DataTypes.DATE,
       allowNull: false,
+    },
+    end_application_date: {
+      type: DataTypes.DATE,
+      allowNull: true
     },
     job_location: {
       type: DataTypes.STRING,

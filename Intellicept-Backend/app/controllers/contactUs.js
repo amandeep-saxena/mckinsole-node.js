@@ -46,12 +46,21 @@ module.exports = function (app) {
   });
 
   apiRoutes.get("/get-contactUs", async (req, res) => {
-    try {
-      const data = await ContactUs.findAll();
-      res.status(200).json(data);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
+    await ContactUs.findAll().then(
+      (resp) => {
+        console.log(resp);
+        res.status(200).send(resp);
+      },
+      (error) => {
+        res.status(400).send(error.message);
+      }
+    );
+    // try {
+    //   const data = await ContactUs.findAll();
+    //   res.status(200).json(data);
+    // } catch (error) {
+    //   res.status(500).json({ error: error.message });
+    // }
   });
 
   app.use("/", apiRoutes);

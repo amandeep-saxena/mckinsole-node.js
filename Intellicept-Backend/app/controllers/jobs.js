@@ -11,6 +11,7 @@ module.exports = function (app) {
         job_title: req.body.job_title,
         job_description: req.body.job_description,
         start_application_date: req.body.start_application_date,
+        end_application_date:req.body.end_application_date,
         job_location: req.body.job_location,
         no_of_position: req.body.no_of_position,
         job_created_by: req.body.job_created_by,
@@ -18,6 +19,7 @@ module.exports = function (app) {
       };
 
       const data = await Jobs.create(jobData);
+      console.log(data)
       res.status(200).json("Job Added Successfully");
     } catch (error) {
       res.status(500).json({ error: error.message });
