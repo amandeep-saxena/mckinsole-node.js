@@ -8,7 +8,7 @@ const sequelize = new Sequelize("intellicept", "root", "aman@12", {
   dialect: "mysql",
 });
 
-// const sequelize = new Sequelize(env.database, env.user, env.password, {F
+// const sequelize = new Sequelize(env.database, env.user, env.password, {
 //   host: env.host,
 //   dialect: env.dialect,
 //   logging: false,

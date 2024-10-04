@@ -7,8 +7,10 @@ module.exports = function (app) {
 
   apiRoutes.post("/contactUs", async (req, res) => {
     try {
-      const { name, email, subject, message } = req.body;
-      const data = await ContactUs.create({ name, email, subject, message });
+      const { name, email, message, phone } = req.body;
+      console.log(req.body)
+      const data = await ContactUs.create({ name, email, message, phone });
+      console.log(data)
       res.status(200).json(data);
 
       //   const emailHtml = `

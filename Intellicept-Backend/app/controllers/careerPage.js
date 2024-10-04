@@ -52,8 +52,7 @@ module.exports = function (app) {
   //         <body>
   //           <div class="email-container">
   //             <h2>Job Application Received</h2>
-  //             <p>Dear ${name},</p>
-  //             <p>Thank you for applying for the position. We have received your application and resume.</p>
+  //             <p>Dear ${name},</p>l
   //             <p>Best regards,</p>
   //             <p>Intellicept</p>
   //           </div>
@@ -76,12 +75,11 @@ module.exports = function (app) {
   //   }
   // });
 
-  
+
   apiRoutes.post("/User", upload.single("file"), async (req, res) => {
     try {
       const { name, email, phone, desc } = req.body;
       const file = req.file ? req.file.path : null;
-  
       const newUser = await UserData.create({
         name,
         email,
@@ -89,37 +87,37 @@ module.exports = function (app) {
         desc,
         file,
       });
-  
+
       // Define the path to your email template
       const emailTemplatePath = path.join('email.ejs');
-  
+
       // Render the email HTML using EJS, passing in the name
       ejs.renderFile(emailTemplatePath, { name }, (err, emailHtml) => {
         if (err) {
           console.error('Error rendering EJS template:', err);
           return res.status(500).json({ message: 'Error generating email' });
         }
-  
+
         // Send the email using your mailer
         mailer([email], "Job Application Received", emailHtml);
-  
+
         res.status(200).json({
           message: "User created successfully",
           user: newUser,
         });
       });
-      
+
     } catch (error) {
       console.error("Error creating user:", error);
       res.status(500).json({ message: "Internal Server Error" });
     }
   });
-  
-  
+
+
 
   apiRoutes.get("/user-data", async (req, res) => {
     try {
-      const users = await UserData.findAll(); 
+      const users = await UserData.findAll();
       const userList = users.map(user => ({
         id: user.id,
         name: user.name,
@@ -130,7 +128,8 @@ module.exports = function (app) {
       }));
 
       res.status(200).json({
-        users: userList, 
+        users: userList,
+
       });
     } catch (error) {
       console.error("Error fetching user data:", error);

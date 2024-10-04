@@ -11,7 +11,7 @@ module.exports = function (app) {
         job_title: req.body.job_title,
         job_description: req.body.job_description,
         start_application_date: req.body.start_application_date,
-        end_application_date:req.body.end_application_date,
+        end_application_date: req.body.end_application_date,
         job_location: req.body.job_location,
         no_of_position: req.body.no_of_position,
         job_created_by: req.body.job_created_by,
@@ -19,7 +19,9 @@ module.exports = function (app) {
       };
 
       const data = await Jobs.create(jobData);
-      console.log(data)
+      console.log(data);
+
+      // res.status(200).send({ message: "Success", Data: data });
       res.status(200).json("Job Added Successfully");
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -29,6 +31,7 @@ module.exports = function (app) {
   apiRoutes.get("/get-jobs", async (req, res) => {
     try {
       const jobs = await Jobs.findAll();
+      console.log(jobs)
       res.status(200).json(jobs);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -56,6 +59,7 @@ module.exports = function (app) {
           job_title: req.body.job_title,
           job_description: req.body.job_description,
           start_application_date: req.body.start_application_date,
+          end_application_date: req.body.end_application_date,
           job_location: req.body.job_location,
           no_of_position: req.body.no_of_position,
           job_created_by: req.body.job_created_by,
@@ -120,7 +124,7 @@ module.exports = function (app) {
         } else {
           res.status(404).json({ message: "Job not found" });
         }
-      } 
+      }
       // const jobId = req.params.id;
 
       // const updatedJob = await Jobs.update(

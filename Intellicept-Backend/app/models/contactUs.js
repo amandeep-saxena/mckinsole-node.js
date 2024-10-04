@@ -11,7 +11,7 @@ const ContactUs = sequelize.define(
       required: true,
       unique: true,
       allowNull: false,
-  },
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -19,11 +19,14 @@ const ContactUs = sequelize.define(
     email: {
       type: DataTypes.STRING,
       allowNull: false,
-      // unique: true,
-      // validate: {
-      //   isEmail: true,
-      // },
     },
+    // email: {
+    //   type: DataTypes.STRING,
+    //   allowNull: false,
+    //   validate: {
+    //     isEmail: false,
+    //   },
+    // },
     message: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -31,7 +34,7 @@ const ContactUs = sequelize.define(
     phone: {
       type: DataTypes.STRING,
       allowNull: false,
-    }
+    },
   },
   {
     tableName: "contact",
@@ -40,11 +43,14 @@ const ContactUs = sequelize.define(
 
 (async () => {
   try {
-    await sequelize.sync();
+    await sequelize.sync({ alter: true });
     // console.log("Database synchronized");
   } catch (error) {
-    console.error("Error synchronizing database:", error);
+    console.error(
+      "Error synchronizing database:",
+      error.errors || error.message || error
+    );
   }
 })();
 
-module.exports = ContactUs
+module.exports = ContactUs;
